@@ -4,17 +4,23 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --check index.js && node --check questions.js && node --check ecosystem.config.js"
   },
   "engines": {
     "node": ">=18"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "telegram",
+    "telegram-bot",
+    "quiz",
+    "bmw",
+    "nodejs"
+  ],
+  "author": "Bogdan Vitriak",
+  "license": "MIT",
   "dependencies": {
     "dotenv": "^16.5.0",
     "node-telegram-bot-api": "^0.66.0"
   },
-  "description": ""
+  "description": "A Node.js Telegram bot that runs quizzes about BMW cars to help new employees learn the technical specifications."
 }
