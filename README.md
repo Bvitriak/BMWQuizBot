@@ -45,6 +45,8 @@ Webhook-секрет: `node -e "process.stdout.write(require('node:crypto').rand
 
 ## Проверки
 
+Любое изменение в `main` проходит через PR. GitHub требует зелёные `Build & test (Node 26.x)` и `Analyze (javascript-typescript)` на актуальной версии PR. Имена этих заданий связаны с правилами ветки: при переименовании сначала проверьте новые задания на PR, затем обновите правила на GitHub.
+
 ```bash
 pnpm typecheck
 pnpm lint
