@@ -2,7 +2,7 @@ blank_issues_enabled: false
 contact_links:
   - name: 🔒 Report a security vulnerability
     url: https://github.com/Bvitriak/BMWQuizBot/security/advisories/new
-    about: Please report security issues privately, not as a public issue. See SECURITY.md.
+    about: Please report security issues privately, not as a public issue. See .github/SECURITY.md.
   - name: 💬 Questions & general discussion
     url: https://github.com/Bvitriak/BMWQuizBot/discussions
     about: Ask questions and discuss the project here (if Discussions are enabled).

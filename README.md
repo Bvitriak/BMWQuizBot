@@ -1,70 +1,67 @@
-# BMW Quiz Telegram Bot
+# BMWQuizBot
 
-## Description
+Telegram-квиз о BMW. Node.js 26 LTS, строгий TypeScript/ESM, grammY, Zod, PostgreSQL 18 и Drizzle.
 
-A Node.js Telegram bot that runs quizzes about BMW cars. The goal is to help new
-employees get up to speed with the technical specifications of the cars — for
-example, which engines are fitted to particular BMW models.
+## Тесты из Docker Desktop (macOS)
 
-## Features
+1. Один раз откройте в Finder [`docker/Docker Tests.command`](docker/Docker%20Tests.command). Файл запустит Docker Desktop при необходимости, соберёт тестовый образ и создаст проект `bmwquiz-tests`. Первый запуск скачивает образы.
+2. В Docker Desktop откройте **Containers → bmwquiz-tests → tests → Logs**. Успешный прогон заканчивается статусом **Exited (0)**. Контейнер `tests` запускается на один прогон, поэтому он не должен оставаться в состоянии Running.
+3. Для повторного запуска нажмите **Start** на контейнере `tests`. Если тестовая `db` остановлена, сначала запустите её. Изменения в исходниках, тестах и миграциях подхватываются при следующем запуске; после смены зависимостей или `Dockerfile` снова откройте `Docker Tests.command`.
 
-- **BMW model quiz**: users answer questions about engines and other car specs.
-- **Answer feedback**: after every question the bot shows the correct answer and an explanation.
-- **Progress tracking**: the bot keeps all-time statistics and recommends repeating the questions you got wrong.
-- **Mistake review mode**: replay only the questions you answered incorrectly until you get them right.
+Тесты используют настоящую PostgreSQL и локальный имитатор Telegram API. Токен, `.env` и `users.json` в тестовые контейнеры не передаются, база не публикует порт и очищается при остановке контейнера `db`. В CI те же тесты запускает [Docker Compose](docker/compose.yaml).
 
-## Getting started
+## Запуск бота
 
-### 1. Clone the repository
 ```bash
-cd <your-project-location>
-git clone <your-repository-url>
-cd BMW-quiz-bot
+nvm install
+command -v pnpm >/dev/null || npm install --global pnpm@10.34.9
+pnpm install --frozen-lockfile
+(umask 077; cp -n .env.example .env)
 ```
 
-### 2. Install dependencies
+Создайте отдельную PostgreSQL по [инструкции настройки ролей, миграций и импорта](docs/postgres.md). Для рабочей базы в Docker есть отдельный [`docker/compose.postgres.yaml`](docker/compose.postgres.yaml). Заполните `DATABASE_URL` и получите `BOT_TOKEN` у [@BotFather](https://t.me/BotFather). При обновлении со старой JavaScript-версии перенесите значение из `TELEGRAM_BOT_TOKEN` в `BOT_TOKEN`.
+
 ```bash
-npm install
+pnpm build
+pnpm start
 ```
 
-### 3. Configure the bot token
-Create a `.env` file from the provided example and paste your token from
-[@BotFather](https://t.me/BotFather):
+Для разработки: `pnpm dev`. Для PM2: `pnpm build`, затем `pm2 start config/ecosystem.config.cjs`. Для сборки контейнера бота из корня: `docker build -f docker/Dockerfile --target app .`. Compose-проект предназначен только для тестов.
+
+| `BOT_MODE` | Настройка                                                                                                                                                                                                                                                                                                                                                                        |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `polling`  | По умолчанию. Один процесс на токен. Бот отключает webhook, не сбрасывая необработанные обновления.                                                                                                                                                                                                                                                                              |
+| `webhook`  | Задайте `WEBHOOK_URL=https://bot.example.com/telegram` и `WEBHOOK_SECRET`. HTTPS-прокси должен передавать заголовок `X-Telegram-Bot-Api-Secret-Token` на внутренний слушатель; не записывайте этот заголовок или тело запроса в журналы. Слушатель по умолчанию – `127.0.0.1:3000`; в контейнере за отдельным прокси укажите `WEBHOOK_HOST=0.0.0.0` без публикации порта наружу. |
+
+Webhook-секрет: `node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('base64url') + '\n')"`. Бот не удаляет webhook при остановке.
+
+## Квиз и данные
+
+- `/start` – меню, `/quiz` – начать или продолжить полный раунд, `/restart` – начать новый полный раунд.
+- `/topics` – выбрать тему и пройти пять разных вопросов. Темы, где меньше пяти вопросов, скрыты. Сейчас открыты BMW M и History. Ответы учитываются в статистике, но не увеличивают счётчик полных раундов.
+- `/mistakes` – повторить нерешённые вопросы в личном чате. Неверный ответ или пропуск добавляет вопрос в список; правильный ответ в любом режиме удаляет его. Пересдача не меняет общий счёт.
+- `/stats` – личная статистика и место в рейтинге; `/help` – справка. Сброс статистики не сбрасывает текущие раунды и список ошибок.
+- База сохраняет последний раунд каждого типа для игрока. Продолжайте его из того же чата; выбор другой темы заменяет предыдущий тематический раунд, не трогая полный. `SESSION_TTL_SECONDS` ограничивает срок работы кнопок, а не хранение прогресса.
+
+## Проверки
+
 ```bash
-cp .env.example .env
-```
-```
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-```
-
-### 4. Run the bot
-```bash
-node index.js
+pnpm typecheck
+pnpm lint
+pnpm format:check
+pnpm test
+pnpm build
+pnpm audit --audit-level moderate
 ```
 
-## Usage
+## Структура
 
-1. **Start the quiz**: press "🚀 Start Quiz" or send the `/start` command.
-2. **Answer questions**: choose `a`, `b`, or `c`, or skip a question.
-3. **Get help**: press "🆘 Help" or send `/help`.
-4. **Track progress**: the bot tracks your results and offers to repeat the tricky questions.
-
-### Commands
-- `/start` — main menu
-- `/quiz` — start the quiz
-- `/stats` — show statistics
-- `/help` — show help
-
-## Tech stack
-- **Telegram Bot API** (`node-telegram-bot-api`) for the bot
-- **Node.js** for the bot logic
-- **dotenv** for environment variables
-
-## Requirements
-- Node.js (version 12+ recommended)
-- A Telegram account
-- A bot token from [@BotFather](https://t.me/BotFather)
-
-## About
-
-This project was implemented as part of a first-year university project in 2025.
+| Папка                 | Содержимое                                     |
+| --------------------- | ---------------------------------------------- |
+| [`src/`](src)         | Код бота и доступ к PostgreSQL                 |
+| [`tests/`](tests)     | Модульные и интеграционные тесты               |
+| [`drizzle/`](drizzle) | SQL-миграции                                   |
+| [`config/`](config)   | Настройки сборки, Vitest, Drizzle и PM2        |
+| [`docker/`](docker)   | Образы, тестовый Compose и запуск через Finder |
+| [`docs/`](docs)       | Инструкции для проекта                         |
+| [`.github/`](.github) | CI, шаблоны и правила участия                  |

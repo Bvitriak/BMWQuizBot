@@ -23,7 +23,7 @@ Closes #
 
 <!-- Describe how you verified your change. -->
 
-- [ ] `npm test` passes locally
+- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass locally
 - [ ] Ran the bot and manually tested the affected flow in Telegram
 
 ## Checklist

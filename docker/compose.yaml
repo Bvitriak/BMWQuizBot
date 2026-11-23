@@ -1,0 +1,51 @@
+name: bmwquiz-tests
+
+services:
+  db:
+    image: postgres:18-bookworm@sha256:194e55feb2597b1465dbee81cc9fd8d204566cd2eb42c8d22fd6c931a38781b1
+    environment:
+      POSTGRES_DB: bmwquiz_test
+      POSTGRES_USER: quiz_test_admin
+      POSTGRES_PASSWORD: local-test-admin-only
+      PGDATA: /var/lib/postgresql/18/docker
+    tmpfs:
+      - /var/lib/postgresql:rw,size=256m
+    volumes:
+      - ./test-roles.sql:/docker-entrypoint-initdb.d/01-roles.sql:ro
+    healthcheck:
+      test:
+        [
+          CMD-SHELL,
+          'pg_isready -h 127.0.0.1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"',
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    networks: [testnet]
+
+  tests:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: tests
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TEST_DATABASE_URL: postgresql://quiz_test_app:local-test-app-only@db:5432/bmwquiz_test?sslmode=disable
+      TEST_MIGRATION_URL: postgresql://quiz_test_migrator:local-test-migrator-only@db:5432/bmwquiz_test?sslmode=disable
+    init: true
+    networks: [testnet]
+    volumes:
+      - ../src:/app/src:ro
+      - ../tests:/app/tests:ro
+      - ../drizzle:/app/drizzle:ro
+      - ../config:/app/config:ro
+      - ../tsconfig.json:/app/tsconfig.json:ro
+      - ../eslint.config.mjs:/app/eslint.config.mjs:ro
+      - ../.prettierrc:/app/.prettierrc:ro
+      - ../.prettierignore:/app/.prettierignore:ro
+
+networks:
+  testnet:
+    internal: true

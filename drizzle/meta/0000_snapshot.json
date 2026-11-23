@@ -1,0 +1,289 @@
+{
+  "id": "68d3ec25-5520-43d5-8c95-49f10c2b69ed",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.quiz_players": {
+      "name": "quiz_players",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "correct": {
+          "name": "correct",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "incorrect": {
+          "name": "incorrect",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "skipped": {
+          "name": "skipped",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "completed": {
+          "name": "completed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "ranked": {
+          "name": "ranked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "menu_nonce": {
+          "name": "menu_nonce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "menu_chat_id": {
+          "name": "menu_chat_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "menu_until": {
+          "name": "menu_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "quiz_rank_correct_idx": {
+          "name": "quiz_rank_correct_idx",
+          "columns": [
+            {
+              "expression": "correct",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"quiz_players\".\"ranked\"",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "quiz_players_positive_id": {
+          "name": "quiz_players_positive_id",
+          "value": "\"quiz_players\".\"id\" BETWEEN 1 AND 9007199254740991"
+        },
+        "quiz_players_safe_counters": {
+          "name": "quiz_players_safe_counters",
+          "value": "\n    \"quiz_players\".\"correct\" BETWEEN 0 AND 1000000000 AND \"quiz_players\".\"incorrect\" BETWEEN 0 AND 1000000000\n    AND \"quiz_players\".\"skipped\" BETWEEN 0 AND 1000000000 AND \"quiz_players\".\"completed\" BETWEEN 0 AND 1000000000\n  "
+        },
+        "quiz_players_menu_is_complete": {
+          "name": "quiz_players_menu_is_complete",
+          "value": "\n    num_nonnulls(\"quiz_players\".\"menu_nonce\", \"quiz_players\".\"menu_chat_id\", \"quiz_players\".\"menu_until\") IN (0, 3)\n    AND (\"quiz_players\".\"menu_nonce\" IS NULL OR \"quiz_players\".\"menu_nonce\" ~ '^[A-Za-z0-9_-]{16}$')\n    AND (\"quiz_players\".\"menu_chat_id\" IS NULL OR \"quiz_players\".\"menu_chat_id\" <> 0)\n  "
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.quiz_rounds": {
+      "name": "quiz_rounds",
+      "schema": "",
+      "columns": {
+        "player_id": {
+          "name": "player_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mode": {
+          "name": "mode",
+          "type": "quiz_round_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nonce": {
+          "name": "nonce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "chat_id": {
+          "name": "chat_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "question_order": {
+          "name": "question_order",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "answers": {
+          "name": "answers",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "buttons_until": {
+          "name": "buttons_until",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "quiz_rounds_player_id_quiz_players_id_fk": {
+          "name": "quiz_rounds_player_id_quiz_players_id_fk",
+          "tableFrom": "quiz_rounds",
+          "tableTo": "quiz_players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "quiz_rounds_player_id_mode_pk": {
+          "name": "quiz_rounds_player_id_mode_pk",
+          "columns": [
+            "player_id",
+            "mode"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "quiz_round_nonce_key": {
+          "name": "quiz_round_nonce_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "nonce"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "quiz_round_auth_fields": {
+          "name": "quiz_round_auth_fields",
+          "value": "\"quiz_rounds\".\"chat_id\" <> 0 AND \"quiz_rounds\".\"nonce\" ~ '^[A-Za-z0-9_-]{16}$'"
+        },
+        "quiz_round_scope": {
+          "name": "quiz_round_scope",
+          "value": "\n    (\"quiz_rounds\".\"mode\" = 'topic' AND \"quiz_rounds\".\"category\" IS NOT NULL AND cardinality(\"quiz_rounds\".\"question_order\") BETWEEN 1 AND 5)\n    OR (\"quiz_rounds\".\"mode\" <> 'topic' AND \"quiz_rounds\".\"category\" IS NULL AND cardinality(\"quiz_rounds\".\"question_order\") BETWEEN 1 AND 100)\n  "
+        },
+        "quiz_round_progress": {
+          "name": "quiz_round_progress",
+          "value": "\n    jsonb_typeof(\"quiz_rounds\".\"answers\") = 'array' AND jsonb_array_length(\"quiz_rounds\".\"answers\") <= cardinality(\"quiz_rounds\".\"question_order\")\n  "
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.quiz_unresolved": {
+      "name": "quiz_unresolved",
+      "schema": "",
+      "columns": {
+        "player_id": {
+          "name": "player_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "question_id": {
+          "name": "question_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "quiz_unresolved_player_id_quiz_players_id_fk": {
+          "name": "quiz_unresolved_player_id_quiz_players_id_fk",
+          "tableFrom": "quiz_unresolved",
+          "tableTo": "quiz_players",
+          "columnsFrom": [
+            "player_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "quiz_unresolved_player_id_question_id_pk": {
+          "name": "quiz_unresolved_player_id_question_id_pk",
+          "columns": [
+            "player_id",
+            "question_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "quiz_unresolved_valid_id": {
+          "name": "quiz_unresolved_valid_id",
+          "value": "\"quiz_unresolved\".\"question_id\" ~ '^[a-z0-9-]{1,32}$'"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.quiz_round_mode": {
+      "name": "quiz_round_mode",
+      "schema": "public",
+      "values": [
+        "quiz",
+        "topic",
+        "review"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -30,7 +30,7 @@ If applicable, add screenshots or console output to help explain the problem.
 ## Environment
 
 - OS: [e.g. macOS 14, Ubuntu 22.04]
-- Node.js version: [e.g. 18.19.0]
+- Node.js version: [e.g. 26.13.1]
 - Bot version / commit: [e.g. `bb326c0`]
 
 ## Additional context
