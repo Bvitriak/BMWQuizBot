@@ -1,13 +1,32 @@
 {
   "name": "bmw-quiz-bot",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.9",
   "scripts": {
-    "start": "node index.js",
-    "test": "node --check index.js && node --check questions.js && node --check ecosystem.config.js"
+    "start": "node --env-file-if-exists=.env dist/index.js",
+    "dev": "node --watch --env-file-if-exists=.env src/index.ts",
+    "build": "tsc -p config/tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate --config=config/drizzle.config.ts",
+    "db:migrate": "node --env-file-if-exists=.env src/storage/migrate.cli.ts",
+    "db:import": "node --env-file-if-exists=.env src/storage/import.cli.ts",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run --config config/vitest.config.ts",
+    "test:coverage": "pnpm test --coverage",
+    "test:integration": "vitest run --config config/vitest.integration.config.ts",
+    "test:docker": "pnpm typecheck && pnpm lint && pnpm format:check && drizzle-kit check --config=config/drizzle.config.ts && vitest run --config config/vitest.docker.config.ts --coverage && pnpm build"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=26.13.1 <27"
+  },
+  "pnpm": {
+    "overrides": {
+      "@esbuild-kit/core-utils>esbuild": "0.25.12"
+    }
   },
   "keywords": [
     "telegram",
@@ -19,8 +38,23 @@
   "author": "Bogdan Vitriak",
   "license": "MIT",
   "dependencies": {
-    "dotenv": "^16.5.0",
-    "node-telegram-bot-api": "^0.66.0"
+    "drizzle-orm": "0.45.4",
+    "grammy": "1.48.0",
+    "pg": "8.23.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.6",
+    "@types/pg": "8.23.1",
+    "@vitest/coverage-v8": "5.1.1",
+    "drizzle-kit": "0.31.11",
+    "eslint": "10.15.0",
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.10.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.73.0",
+    "vitest": "5.1.1"
   },
   "description": "A Node.js Telegram bot that runs quizzes about BMW cars to help new employees learn the technical specifications."
 }

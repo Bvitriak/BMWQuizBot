@@ -34,14 +34,18 @@ you would like.
 
 ## Scope
 
-This bot handles a Telegram bot token and stores per-user quiz progress. Please
-be especially mindful of:
+This bot handles a Telegram bot token, an optional webhook secret and per-user
+quiz statistics:
 
-- **Bot token exposure** — the token lives in the `.env` file, which is
-  git-ignored. Never commit a real token. If a token is leaked, revoke it
-  immediately via [@BotFather](https://t.me/BotFather).
-- **User data** — `users.json` stores quiz progress and Telegram user
-  identifiers. It is git-ignored and should not be committed.
+- **Credentials** – keep `BOT_TOKEN` and `WEBHOOK_SECRET` in environment variables
+  or the ignored `.env` file. Revoke a leaked bot token immediately via
+  [@BotFather](https://t.me/BotFather); replace a leaked webhook secret and
+  restart the bot to register the new one.
+- **User data** – PostgreSQL stores Telegram identifiers, counters, round
+  progress and unresolved question IDs. Keep connection URLs and backups out
+  of Git. A legacy `users.json` is an import only and must not be committed.
+- **Webhook** – keep the internal listener private. Do not log request bodies
+  or the `X-Telegram-Bot-Api-Secret-Token` header at the HTTPS proxy.
 
 ## Handling of Secrets
 
