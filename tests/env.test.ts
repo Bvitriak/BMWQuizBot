@@ -10,7 +10,7 @@ describe('environment', () => {
   it('defaults to polling and reports only the name of an invalid variable', () => {
     expect(loadEnv(base).BOT_MODE).toBe('polling');
     expect(() => loadEnv({ ...base, BOT_TOKEN: 'do-not-log-me' })).toThrow(
-      'Проверьте переменные окружения: BOT_TOKEN',
+      'Check environment variables: BOT_TOKEN',
     );
     expect(() => loadEnv({ ...base, RATE_LIMIT_MAX_USERS: '1e5' })).toThrow(
       'RATE_LIMIT_MAX_USERS',

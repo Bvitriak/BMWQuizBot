@@ -68,7 +68,7 @@ pnpm dev
    pnpm build
    ```
    For the complete suite including PostgreSQL, use the Docker Desktop setup
-   in the [README](../README.md#тесты-из-docker-desktop-macos). The suite uses a mock Telegram API.
+   in the [README](../README.md#optional-local-tests-with-docker-desktop-macos). The suite uses a mock Telegram API.
 4. Push your branch and open a pull request.
 
 ## Adding or editing quiz questions

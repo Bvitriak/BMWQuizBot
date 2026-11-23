@@ -9,7 +9,7 @@ try {
   const database = connectDatabase(url, { max: 1, timeoutMs: 30_000, log });
   try {
     await migrate(database.db, { migrationsFolder: resolve('drizzle') });
-    process.stdout.write('Миграции PostgreSQL применены.\n');
+    process.stdout.write('PostgreSQL migrations applied.\n');
   } finally {
     await database.close();
   }

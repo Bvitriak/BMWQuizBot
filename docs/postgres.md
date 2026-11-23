@@ -1,10 +1,10 @@
-# PostgreSQL для BMWQuizBot
+# PostgreSQL for BMWQuizBot
 
-Тестовый Compose использует временную базу `bmwquiz_test`. Не назначайте её рабочему боту. Для рабочего экземпляра нужна отдельная PostgreSQL 18 с постоянным томом, резервными копиями и без публичного порта.
+The test Compose stack uses the temporary `bmwquiz_test` database. Do not connect a self-hosted bot to it. Use a dedicated PostgreSQL 18 instance with a persistent volume, backups, and no publicly exposed port.
 
-## Рабочая база в Docker
+## Persistent database with Docker
 
-На сервере из корня проекта создайте три разных пароля. Каталог игнорируется Git. Права `0444` на файлах нужны непривилегированным процессам в контейнерах; на хосте доступ к каталогу ограничен правами `0700`. Если каталог уже существует, этот блок прервётся, не меняя пароли.
+From the project root on your server, generate three distinct passwords. Git ignores the secret directory. The files use mode `0444` so that unprivileged container processes can read them, while mode `0700` restricts access to the directory on the host. If the directory already exists, the block stops without changing the passwords.
 
 ```sh
 (
@@ -23,22 +23,22 @@ docker compose --env-file /dev/null -f docker/compose.postgres.yaml up -d --wait
 docker compose --env-file /dev/null -f docker/compose.postgres.yaml run --rm --build migrate
 ```
 
-База не публикует порт и хранит данные в томе `bmwquiz-db_pgdata`. Не удаляйте том при обновлении. Подключите контейнер бота к сети `bmwquiz-db_backend` и отдельно к сети с выходом в Telegram. В `DATABASE_URL` используйте хост `db`, базу `bmwquiz`, роль `bmwquiz_app` и её пароль из `.db-secrets/app_password`. Не передавайте доступ администратора или мигратора боту. `sslmode=disable` допустим только внутри этой изолированной сети на одном сервере. Не подключайте к ней посторонние контейнеры.
+PostgreSQL does not publish a port and stores data in `bmwquiz-db_pgdata`. Do not delete this volume during upgrades. Connect the bot container to `bmwquiz-db_backend` and to a separate network that can reach Telegram. In `DATABASE_URL`, use host `db`, database `bmwquiz`, role `bmwquiz_app`, and the password from `.db-secrets/app_password`. Do not give the bot administrator or migration credentials. Use `sslmode=disable` only on this isolated network on a single server, and do not attach unrelated containers.
 
-Файлы паролей используются для создания ролей только при первом запуске на пустом томе. Для ротации меняйте пароль в PostgreSQL и соответствующий секрет согласованно. Не подменяйте файлы в надежде, что пароль в существующей базе обновится автоматически.
+The secret files initialize the roles only when PostgreSQL starts on an empty volume. To rotate a password, update the PostgreSQL role and its secret together. Replacing a file does not change an existing database role.
 
-Пример резервной копии: замените путь в последней строке на закрытый каталог вне репозитория. Успешный `pg_dump` ещё не подтверждает возможность восстановления: проверьте `pg_restore` в отдельной базе до первого запуска бота.
+For a backup, replace the destination below with a restricted directory outside the repository. Before starting the bot, verify that `pg_restore` can restore the dump to a separate database.
 
 ```sh
 umask 077
 docker compose --env-file /dev/null -f docker/compose.postgres.yaml exec -T db sh -ec \
   'export PGPASSWORD="$(cat /run/secrets/admin_password)"; exec pg_dump -U bmwquiz_admin -d bmwquiz -Fc' \
-  > /закрытый/каталог/bmwquiz.dump
+  > /path/to/private/bmwquiz.dump
 ```
 
-## Отдельный сервер PostgreSQL: роли и права
+## Existing PostgreSQL server: roles and permissions
 
-Под администратором PostgreSQL создайте две роли и выделенную базу. В `psql` команда `\password` запрашивает пароль без сохранения в SQL-истории:
+As a PostgreSQL administrator, create two roles and a dedicated database. In `psql`, `\password` prompts for a password without putting it in SQL history:
 
 ```sql
 CREATE ROLE bmwquiz_migrator LOGIN;
@@ -55,19 +55,19 @@ ALTER DEFAULT PRIVILEGES FOR ROLE bmwquiz_migrator IN SCHEMA public
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO bmwquiz_app;
 ```
 
-`DATABASE_MIGRATION_URL` использует `bmwquiz_migrator` и нужен только команде `pnpm db:migrate`. В `DATABASE_URL` у бота и импортера используйте `bmwquiz_app`, которому не нужна возможность менять схему. Для сетевого подключения используйте TLS с проверкой имени и сертификата (`sslmode=verify-full`); пароли в URL должны быть percent-encoded. Размер пула процесса задаёт `DATABASE_POOL_MAX`.
+Use `bmwquiz_migrator` in `DATABASE_MIGRATION_URL` only for `pnpm db:migrate`. Use `bmwquiz_app` in `DATABASE_URL` for the bot and importer; neither needs permission to change the schema. For a network connection, use TLS with certificate and hostname verification (`sslmode=verify-full`). Percent-encode passwords in connection URLs. `DATABASE_POOL_MAX` sets the connection pool size per process.
 
-## Первое обновление и импорт
+## First upgrade and import
 
-1. Остановите старого бота и создайте закрытую резервную копию прежнего `users.json`. Сделайте это до запуска новой версии, чтобы свежие данные не заняли ключи игроков в PostgreSQL.
-2. Примените миграции один раз с ролью мигратора: `pnpm db:migrate`.
-3. Если есть старый файл, импортируйте его ролью приложения: `pnpm db:import` или `pnpm db:import /путь/к/users.json`. Сверьте число импортированных и пропущенных строк. Команда не записывает персональные данные в журнал, исходный файл не меняет, существующих игроков не перезаписывает.
-4. Запустите бота только после импорта. Если используется Docker-образ `app`, соответствующие команды в контейнере – `node dist/storage/migrate.cli.js` и `node dist/storage/import.cli.js /путь/к/users.json`. Подключайте файл импорта только на чтение и не включайте его в образ.
+1. Stop the old bot and make a private backup of `users.json`. Do this before starting the new version so that new records do not occupy existing player keys in PostgreSQL.
+2. Apply migrations once using the migration role: `pnpm db:migrate`.
+3. If you have a legacy file, use the application role and run `pnpm db:import` or `pnpm db:import /path/to/users.json`. Check the imported and skipped counts. The importer does not log personal data, change the source file, or overwrite existing players.
+4. Start the bot after importing. In the Docker `app` image, use `node dist/storage/migrate.cli.js` and `node dist/storage/import.cli.js /path/to/users.json`. Mount the import file read-only; never bake it into the image.
 
-Импорт поддерживает итоговые счётчики из TypeScript-версии и известные поля старой JavaScript-версии: ответы, пропуски, текущий вопрос и список ошибок. Для старых раундов чат неизвестен, поэтому они восстанавливаются в личном чате игрока. Временная очередь старого режима пересдачи не переносится; сами ошибки доступны через `/mistakes`. То, чего прежний `users.json` не сохранял, восстановить нельзя.
+The importer supports aggregate counts from the TypeScript version and known fields from the legacy JavaScript version: answers, skips, the current question, and mistakes. Old rounds resume in the player's private chat because the original chat is unknown. The legacy review queue is not migrated, but unresolved questions remain available through `/mistakes`. Data that was never saved in `users.json` cannot be recovered.
 
-## Эксплуатация
+## Maintenance
 
-- Миграции генерируются через `pnpm db:generate --name <имя>` и проверяются перед применением. Не запускайте два мигратора одновременно.
-- Храните PostgreSQL и резервные копии в закрытом контуре; для работы с данными российских игроков заранее проверьте применимые требования к месту хранения и срокам удаления. В БД есть Telegram ID и связанный прогресс, но нет имён и текстов переписки.
-- Если требуется удаление данных игрока, оператор удаляет запись из `quiz_players` по его ID с подтверждением запроса. Внешние ключи удаляют связанные раунды и ошибки; резервные копии живут по отдельному циклу хранения. Не импортируйте старый файл повторно после удаления игроков.
+- Generate migrations with `pnpm db:generate --name <name>` and review them before applying. Do not run two migration jobs at once.
+- Keep PostgreSQL and backups private. Review the storage-location and retention requirements that apply to your deployment before handling player data. The database stores Telegram IDs and quiz progress, not names or message text.
+- To delete a player's data, verify the request and delete their row from `quiz_players` by ID. Foreign keys remove associated rounds and mistakes. Backups have a separate retention schedule. Do not reimport an old file after deleting players.

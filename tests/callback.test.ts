@@ -12,8 +12,8 @@ const payload = { nonce: sessionNonce(), turn: 9999, action: 2 } as const;
 describe('callback codec', () => {
   it('uses a byte limit, not a character limit', () => {
     expect(isCallbackSize('')).toBe(false);
-    expect(isCallbackSize('я'.repeat(32))).toBe(true);
-    expect(isCallbackSize(`${'я'.repeat(32)}x`)).toBe(false);
+    expect(isCallbackSize('é'.repeat(32))).toBe(true);
+    expect(isCallbackSize(`${'é'.repeat(32)}x`)).toBe(false);
     expect(isCallbackSize('x'.repeat(64))).toBe(true);
   });
 
@@ -31,7 +31,7 @@ describe('callback codec', () => {
     ).toBeUndefined();
   });
 
-  it.each([null, {}, 'я'.repeat(33), '1.a.0.2.invalid', '0.a.0.2.invalid'])(
+  it.each([null, {}, 'é'.repeat(33), '1.a.0.2.invalid', '0.a.0.2.invalid'])(
     'rejects invalid wire input %j',
     (data) => {
       expect(codec.decode(data, scope)).toBeUndefined();

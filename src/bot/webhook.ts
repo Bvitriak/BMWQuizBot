@@ -109,7 +109,7 @@ export function webhookServer(
       try {
         await handle(update.data);
       } catch {
-        // Обработчик мог уже принять ответ. Не просим Telegram повторять update.
+        // The answer may already be saved. Do not ask Telegram to retry the update.
         log('update_error');
       }
       response.writeHead(200).end();

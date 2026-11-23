@@ -19,9 +19,7 @@ describe('native TypeScript startup', () => {
       expect(result.status).toBe(1);
       expect(result.stdout).toBe('');
       expect(result.stderr).toContain('"event":"config_error"');
-      expect(result.stderr).toContain(
-        'Проверьте переменные окружения: BOT_TOKEN',
-      );
+      expect(result.stderr).toContain('Check environment variables: BOT_TOKEN');
       expect(result.stderr).not.toContain('never-output-this-invalid-value');
     },
   );

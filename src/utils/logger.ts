@@ -21,7 +21,7 @@ const LEVELS = {
 export type LogEvent = keyof typeof LEVELS;
 export type Logger = (event: LogEvent) => void;
 
-// Только события из белого списка: исходные ошибки, update и аргументы API сюда не передаются.
+// Log only allowlisted events, never raw errors, updates, or API arguments.
 export const log: Logger = (event) => {
   const level = LEVELS[event];
   const line = JSON.stringify({ time: new Date().toISOString(), level, event });
