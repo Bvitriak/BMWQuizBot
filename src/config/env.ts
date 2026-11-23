@@ -39,7 +39,7 @@ export function loadDatabaseUrl(
 ): string {
   const parsed = head.shape.DATABASE_URL.safeParse(source[name]);
   if (!parsed.success)
-    throw new ConfigError(`Проверьте переменные окружения: ${name}`);
+    throw new ConfigError(`Check environment variables: ${name}`);
   return parsed.data;
 }
 
@@ -83,7 +83,7 @@ export function loadEnv(
   if (!result.success) {
     const keys = new Set(result.error.issues.map(({ path }) => path.join('.')));
     throw new ConfigError(
-      `Проверьте переменные окружения: ${[...keys].join(', ')}`,
+      `Check environment variables: ${[...keys].join(', ')}`,
     );
   }
   return result.data;

@@ -15,7 +15,7 @@ try {
       questionIds,
     );
     process.stdout.write(
-      `Импортировано: ${result.imported}. Пропущено существующих: ${result.skipped}.\n`,
+      `Imported: ${result.imported}. Existing players skipped: ${result.skipped}.\n`,
     );
   } finally {
     await database.close();

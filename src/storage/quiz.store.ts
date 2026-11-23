@@ -294,7 +294,7 @@ export function postgresQuizStore(
         const current = currentId(session);
         if (current === undefined) {
           if (action !== 'r' && action !== 'n') return;
-          // Старую клавиатуру результата можно использовать только один раз.
+          // The previous results keyboard can only be used once.
           const next = fresh(session);
           const replacement =
             action === 'r'

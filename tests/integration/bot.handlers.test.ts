@@ -194,7 +194,7 @@ describe('bot handlers via mock Telegram API', () => {
     const wrongChat = h.click(button, 1, -100);
     await Promise.all([foreign, wrongChat]);
     await h.click(button.replace('.s.', '.0.'));
-    await h.click('я'.repeat(33));
+    await h.click('é'.repeat(33));
     await Promise.all([h.click(button), h.click(button)]);
     h.restartProcess();
     await h.click(button);
